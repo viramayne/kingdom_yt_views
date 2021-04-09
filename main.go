@@ -14,10 +14,10 @@ var vid_id1 = []string{"BcA_p83ovAU", "FoUsDnDAnqM", "_rQjh07ccP4",
 var vid_id2 = []string{"4NqQ7dky_Uw", "M1TJGwIMG4Y", "Sa7u3kWeq3s"}
 
 type Config struct {
-	YTApiKey   string `json:"API_KEY"`
-	YTChannel  string `json:"YOUTUBE_CHANNEL"`
-	TGBotToken string `json:"TELEGRAM_BOT_TOKEN"`
-	TGBotURL   string `json:"TELEGRAM_URL"`
+	YTApiKey     string `json:"YOUTUBE_API_KEY"`
+	YTChannelURL string `json:"YOUTUBE_CHANNEL_URL"`
+	TGBotToken   string `json:"TELEGRAM_BOT_TOKEN"`
+	TGBotURL     string `json:"TELEGRAM_URL"`
 }
 
 func main() {
