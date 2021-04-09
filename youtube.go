@@ -129,4 +129,4 @@ func (yt *YTStat) getStatistics(vid_ids *[]string) (*Resp, error) {
 // Accept: application/json
 // youtube channel url "https://www.youtube.com/c/Mnet"
 
-// GET https://youtube.googleapis.com/youtube/v3/search?part=snippet&channelId=UCbD8EppRX3ZwJSou-TVo90A&order=title&publishedAfter=2021-03-31T00%3A00%3A00Z&q=%5B%ED%92%80%EB%B2%84%EC%A0%84%5D%20-%EC%A7%81%EC%BA%A0%20-%ED%9A%8C&safeSearch=none&key=[YOUR_API_KEY] HTTP/1.1
+// GET https://youtube.googleapis.com/youtube/v3/search?part=snippet&channelId=UCbD8EppRX3ZwJSou-TVo90A&order=date&publishedAfter=2021-03-31T00%3A00%3A00Z&q=%5B%ED%92%80%EB%B2%84%EC%A0%84%5D%20-%ED%9A%8C&key=[YOUR_API_KEY] HTTP/1.1

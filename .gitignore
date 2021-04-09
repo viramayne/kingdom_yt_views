@@ -5,7 +5,7 @@
 *.so
 *.dylib
 *.vscode
-config.json
+configuration.json
 
 # Test binary, built with `go test -c`
 *.test

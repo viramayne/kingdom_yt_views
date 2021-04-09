@@ -23,7 +23,7 @@ type Config struct {
 func main() {
 	defer log.Printf("%s exiting", appname)
 
-	file, _ := os.Open("config.json")
+	file, _ := os.Open("configuration.json")
 	decoder := json.NewDecoder(file)
 	configuration := Config{}
 	err := decoder.Decode(&configuration)
