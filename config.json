@@ -1,0 +1,8 @@
+// Put your YouTube API KEY in field "API_KEY" and TELEGRAM BOT TOKEN to same named field
+
+{
+    "API_KEY": "",
+    "YOUTUBE_CHANNEL": "https://www.youtube.com/c/Mnet",
+    "TELEGRAM_BOT_TOKEN": "",
+    "TELEGRAM_URL": "https://api.telegram.org/bot"
+}
