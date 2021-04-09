@@ -1,6 +1,6 @@
 # kingdom_yt_views
 
-Statistics of count of views on "Kingdom: Legendary War" performances on youtube 
+Statistics of count of views on "Kingdom: Legendary War" performances on youtube
 
 @kingdom_views_bot
 
