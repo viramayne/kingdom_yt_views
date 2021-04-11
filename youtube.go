@@ -8,7 +8,22 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 )
+
+// RespSearch struct to get needed info from yt api
+type RespSearch struct {
+	Items []ItemSearch `json:"items"`
+}
+
+type ItemSearch struct {
+	Id         ID         `json:"id"`
+	Statistics Statistics `json:"statistics"`
+	Snippet    Snippets   `json:"snippet"`
+}
+type ID struct {
+	VideoID string `json:"videoId"`
+}
 
 // Resp struct to get needed info from yt api
 type Resp struct {
@@ -17,26 +32,91 @@ type Resp struct {
 
 type Item struct {
 	Id         string     `json:"id"`
-	Name       Snippet    `json:"snippet"`
 	Statistics Statistics `json:"statistics"`
+	Snippet    Snippets   `json:"snippet"`
 }
 
-type Snippet struct {
-	Title string `json:"title"`
+type Snippets struct {
+	Title         string `json:"title"`
+	PublishedTime string `json:"publishedTime"`
 }
 
 type Statistics struct {
-	Views string `json:"viewCount"`
-	Likes string `json:"likeCount"`
-	// Dislikes string `json:"dislikeCount"`
+	Views    string `json:"viewCount"`
+	Likes    string `json:"likeCount"`
+	Dislikes string `json:"dislikeCount"`
 }
 
 type YTStat struct {
-	Api string
+	Api       string
+	ChannelID string
+	Videos    *[]string
 }
 
-func NewYTStat(api string) *YTStat {
-	return &YTStat{Api: api}
+var (
+	channelsURL string = "https://youtube.googleapis.com/youtube/v3/channels"
+	videosURL   string = "https://youtube.googleapis.com/youtube/v3/videos"
+	searchURL   string = "https://youtube.googleapis.com/youtube/v3/search"
+)
+
+func NewYTStat(api string, channelURL string) (*YTStat, error) {
+	// Запросим Channel ID из URL канала
+	channelID, err := makeReqForChannelID(channelURL, api)
+	if err != nil {
+		return nil, err
+	}
+	videos, err := getListOfVideos(api, channelID)
+	if err != nil {
+		return nil, err
+	}
+	return &YTStat{Api: api,
+		ChannelID: channelID,
+		Videos:    videos}, nil
+}
+
+func makeReqForChannelID(channelURL string, api string) (string, error) {
+	idInd := strings.LastIndex(channelURL, "/") + 1
+
+	request, err := http.NewRequest("GET", channelsURL, nil)
+	if err != nil {
+
+		return "", err
+	}
+
+	query := request.URL.Query()
+	query.Add("key", api)
+	query.Add("forUsername", channelURL[idInd:])
+	query.Add("part", "snippet")
+	request.URL.RawQuery = query.Encode()
+
+	client := &http.Client{}
+	r, err := client.Do(request)
+	if err != nil {
+
+		return "", err
+	}
+	defer r.Body.Close()
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	var resp Resp
+
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	if len(resp.Items) == 0 {
+		return "", errors.New("no result for channel ID")
+	}
+
+	if err != nil {
+		return "", err
+	}
+	return resp.Items[0].Id, nil
 }
 
 // MakeReqYTViews Отправляет запрос на получение статистики о видео
@@ -46,21 +126,16 @@ func (yt *YTStat) MakeReqYTViews(vid_ids *[]string) (*Resp, error) {
 	}
 	resp, err := yt.getStatistics(vid_ids)
 	if err != nil {
-		return resp, err
+		return nil, err
 	}
 	// Сортируем по убыванию числа просмотров видео
-	sortRespByViews(resp)
+	resp.sortRespByViews()
 
-	// // Вывод данных в консоль
-	// log.Println(" \t Views \t\t Likes \t\t Name")
-	// for i, v := range resp.Items {
-	// 	log.Printf("%d: %9v  %12v  %s", i+1, v.Statistics.Views, v.Statistics.Likes, v.Name.Title)
-	// }
 	return resp, nil
 }
 
 // Сортировка полученной информации по количеству просмотров видео в убывающем порядке
-func sortRespByViews(resp *Resp) {
+func (resp *Resp) sortRespByViews() {
 	sort.Slice(resp.Items, func(i, j int) (less bool) {
 		iv, _ := strconv.ParseInt(resp.Items[i].Statistics.Views, 10, 64)
 		jv, _ := strconv.ParseInt(resp.Items[j].Statistics.Views, 10, 64)
@@ -84,7 +159,7 @@ func (yt *YTStat) getStatistics(vid_ids *[]string) (*Resp, error) {
 	}
 	var resp Resp
 
-	request, err := http.NewRequest("GET", "https://www.googleapis.com/youtube/v3/videos", nil)
+	request, err := http.NewRequest("GET", videosURL, nil)
 	if err != nil {
 		log.Println(err)
 		return &resp, err
@@ -92,9 +167,9 @@ func (yt *YTStat) getStatistics(vid_ids *[]string) (*Resp, error) {
 
 	vidIds := yt.getVideoIds(vid_ids)
 	query := request.URL.Query()
-	query.Add("key", yt.Api)                // https://developers.google.com/youtube/v3/getting-started
-	query.Add("id", vidIds)                 // video IDs to get sub count of
-	query.Add("part", "snippet,statistics") // leave this how it is
+	query.Add("key", yt.Api)
+	query.Add("id", vidIds)
+	query.Add("part", "snippet,statistics")
 	request.URL.RawQuery = query.Encode()
 
 	client := &http.Client{}
@@ -117,16 +192,60 @@ func (yt *YTStat) getStatistics(vid_ids *[]string) (*Resp, error) {
 		return &resp, err
 	}
 	if len(resp.Items) == 0 {
-		return &resp, nil
+		return &resp, errors.New("no result for videos statistics")
 	}
 
 	return &resp, nil
 }
 
-// GET https://youtube.googleapis.com/youtube/v3/channels?part=snippet&forUsername=Mnet&key=[YOUR_API_KEY] HTTP/1.1
+func getListOfVideos(api, channelID string) (*[]string, error) {
+	var resp RespSearch
 
-// Authorization: Bearer [YOUR_ACCESS_TOKEN]
-// Accept: application/json
-// youtube channel url "https://www.youtube.com/c/Mnet"
+	request, err := http.NewRequest("GET", searchURL, nil)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	// GET https://youtube.googleapis.com/youtube/v3/search?part=snippet&channelId=UCbD8EppRX3ZwJSou-TVo90A&
+	// order=date&publishedAfter=2021-03-31T00%3A00%3A00Z&q=%5B%ED%92%80%EB%B2%84%EC%A0%84%20&key=[YOUR_API_KEY] HTTP/1.1
 
-// GET https://youtube.googleapis.com/youtube/v3/search?part=snippet&channelId=UCbD8EppRX3ZwJSou-TVo90A&order=date&publishedAfter=2021-03-31T00%3A00%3A00Z&q=%5B%ED%92%80%EB%B2%84%EC%A0%84%5D%20-%ED%9A%8C&key=[YOUR_API_KEY] HTTP/1.1
+	query := request.URL.Query()
+	query.Add("channelId", channelID)
+	query.Add("part", "snippet")
+	query.Add("order", "date")
+	query.Add("q", "풀버전")
+	query.Add("key", api)
+
+	request.URL.RawQuery = query.Encode()
+
+	client := &http.Client{}
+	r, err := client.Do(request)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	defer r.Body.Close()
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	if len(resp.Items) == 0 {
+		return nil, errors.New("no results")
+	}
+	videos := make([]string, 0, 6)
+
+	for _, item := range resp.Items {
+		if strings.HasPrefix(item.Snippet.Title, "[풀버전]") {
+			videos = append(videos, item.Id.VideoID)
+		}
+	}
+	return &videos, nil
+}

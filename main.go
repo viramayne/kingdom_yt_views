@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"os"
 )
@@ -14,26 +13,29 @@ var vid_id1 = []string{"BcA_p83ovAU", "FoUsDnDAnqM", "_rQjh07ccP4",
 var vid_id2 = []string{"4NqQ7dky_Uw", "M1TJGwIMG4Y", "Sa7u3kWeq3s"}
 
 type Config struct {
-	YTApiKey     string `json:"YOUTUBE_API_KEY"`
-	YTChannelURL string `json:"YOUTUBE_CHANNEL_URL"`
-	TGBotToken   string `json:"TELEGRAM_BOT_TOKEN"`
-	TGBotURL     string `json:"TELEGRAM_URL"`
+	YTApiKey     string
+	YTChannelURL string
+	TGBotToken   string
+	TGBotURL     string
 }
 
 func main() {
 	defer log.Printf("%s exiting", appname)
-
-	file, _ := os.Open("configuration.json")
-	decoder := json.NewDecoder(file)
-	configuration := Config{}
-	err := decoder.Decode(&configuration)
-	if err != nil {
-		log.Panic(err)
+	configuration := Config{
+		YTApiKey:     os.Getenv("YOUTUBE_API_KEY"),
+		YTChannelURL: os.Getenv("YOUTUBE_CHANNEL_URL"),
+		TGBotToken:   os.Getenv("TELEGRAM_BOT_TOKEN"),
+		TGBotURL:     os.Getenv("TELEGRAM_URL"),
 	}
-	yt := NewYTStat(configuration.YTApiKey)
+
+	yt, err := NewYTStat(configuration.YTApiKey, configuration.YTChannelURL)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	botURL := configuration.TGBotURL + configuration.TGBotToken
 	offset := 0
+
 	bot := NewBot(botURL, offset, yt)
 	for {
 		updates, err := bot.GetUpdates()

@@ -71,7 +71,7 @@ func (b *Bot) GetUpdates() ([]Update, error) {
 
 func (b *Bot) SendResponse(update Update) error {
 	var msg BotMessage
-	var text string = fmt.Sprintf("Current count of views and likes on videos\n%18s|%15s|\t%s", "Views", "Likes", "Name")
+	var text string = fmt.Sprintf("Current count of views and likes on videos\n%18s|%15s|%15s|\t%s", "Views", "Likes", "Dislikes", "Name")
 	var vid_ids *[]string
 	switch update.Message.Text {
 	case "/introduction_stage":
@@ -88,8 +88,8 @@ func (b *Bot) SendResponse(update Update) error {
 	}
 	if resp != nil {
 		for i, v := range resp.Items {
-			text += fmt.Sprintf("\n%2d:%15v|%12v|\t<a href=\"http://y2u.be/%s\">%s</a>\n",
-				i+1, v.Statistics.Views, v.Statistics.Likes, v.Id, v.Name.Title)
+			text += fmt.Sprintf("\n%2d:%15v|%12v|%15v|\t<a href=\"http://y2u.be/%s\">%s</a>\n",
+				i+1, v.Statistics.Views, v.Statistics.Likes, v.Statistics.Dislikes, v.Id, v.Snippet.Title)
 		}
 	}
 	msg.ChatId = update.Message.Chat.ChatId
