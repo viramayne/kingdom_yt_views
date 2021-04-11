@@ -23,7 +23,9 @@ type Message struct {
 }
 
 type Chat struct {
-	ChatId int `json:"id"`
+	ChatId    int    `json:"id"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
 }
 
 type RestResponse struct {
@@ -74,17 +76,19 @@ func (b *Bot) SendResponse(update Update) error {
 	var text string = fmt.Sprintf("Current count of views and likes on videos\n%18s|%15s|%15s|\t%s", "Views", "Likes", "Dislikes", "Name")
 	var vid_ids *[]string
 	switch update.Message.Text {
+	case "/start":
+		text = fmt.Sprintf("Hello %s %s!", update.Message.Chat.FirstName, update.Message.Chat.LastName)
 	case "/introduction_stage":
-		vid_ids = &vid_id1
+		vid_ids = b.YT.Videos["intro"]
 	case "/1_round":
-		vid_ids = &vid_id2
+		vid_ids = b.YT.Videos["1_round"]
 	default:
-		vid_ids = nil
+		text = "Can not recognize command"
 	}
 	resp, err := b.YT.MakeReqYTViews(vid_ids)
 	if err != nil {
 		log.Println(err)
-		text = "Can not recognize command"
+
 	}
 	if resp != nil {
 		for i, v := range resp.Items {

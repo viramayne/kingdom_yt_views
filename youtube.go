@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // RespSearch struct to get needed info from yt api
@@ -37,8 +38,8 @@ type Item struct {
 }
 
 type Snippets struct {
-	Title         string `json:"title"`
-	PublishedTime string `json:"publishedTime"`
+	Title         string    `json:"title"`
+	PublishedTime time.Time `json:"publishedAt"`
 }
 
 type Statistics struct {
@@ -50,7 +51,7 @@ type Statistics struct {
 type YTStat struct {
 	Api       string
 	ChannelID string
-	Videos    *[]string
+	Videos    map[string]*[]string
 }
 
 var (
@@ -198,7 +199,7 @@ func (yt *YTStat) getStatistics(vid_ids *[]string) (*Resp, error) {
 	return &resp, nil
 }
 
-func getListOfVideos(api, channelID string) (*[]string, error) {
+func getListOfVideos(api, channelID string) (map[string]*[]string, error) {
 	var resp RespSearch
 
 	request, err := http.NewRequest("GET", searchURL, nil)
@@ -213,7 +214,9 @@ func getListOfVideos(api, channelID string) (*[]string, error) {
 	query.Add("channelId", channelID)
 	query.Add("part", "snippet")
 	query.Add("order", "date")
-	query.Add("q", "풀버전")
+	query.Add("publishedAfter", "2021-03-31T00:00:00Z")
+	query.Add("maxResults", "25")
+	query.Add("q", "풀버전 킹덤 레전더리워")
 	query.Add("key", api)
 
 	request.URL.RawQuery = query.Encode()
@@ -240,12 +243,20 @@ func getListOfVideos(api, channelID string) (*[]string, error) {
 	if len(resp.Items) == 0 {
 		return nil, errors.New("no results")
 	}
-	videos := make([]string, 0, 6)
+	videos := make(map[string]*[]string)
+	intro := make([]string, 0, 6)
+	round1 := make([]string, 0, 6)
 
 	for _, item := range resp.Items {
 		if strings.HasPrefix(item.Snippet.Title, "[풀버전]") {
-			videos = append(videos, item.Id.VideoID)
+			if _, _, day := item.Snippet.PublishedTime.Date(); day == 1 {
+				intro = append(intro, item.Id.VideoID)
+			} else if day == 8 || day == 15 {
+				round1 = append(round1, item.Id.VideoID)
+			}
 		}
 	}
-	return &videos, nil
+	videos["intro"] = &intro
+	videos["1_round"] = &round1
+	return videos, nil
 }

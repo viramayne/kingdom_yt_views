@@ -7,11 +7,6 @@ import (
 
 const appname = "kingdom_views"
 
-// TODO: delete and load from config file
-var vid_id1 = []string{"BcA_p83ovAU", "FoUsDnDAnqM", "_rQjh07ccP4",
-	"Md4ghQRdLwk", "EZIjLSZlUFs", "8trk5WKgjoI"}
-var vid_id2 = []string{"4NqQ7dky_Uw", "M1TJGwIMG4Y", "Sa7u3kWeq3s"}
-
 type Config struct {
 	YTApiKey     string
 	YTChannelURL string
