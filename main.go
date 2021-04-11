@@ -16,6 +16,8 @@ type Config struct {
 
 func main() {
 	defer log.Printf("%s exiting", appname)
+
+	log.Println("Getting parameters from env")
 	configuration := Config{
 		YTApiKey:     os.Getenv("YOUTUBE_API_KEY"),
 		YTChannelURL: os.Getenv("YOUTUBE_CHANNEL_URL"),
@@ -23,15 +25,15 @@ func main() {
 		TGBotURL:     os.Getenv("TELEGRAM_URL"),
 	}
 
+	log.Printf("Creating YouTube client for %s\n", configuration.YTChannelURL)
 	yt, err := NewYTStat(configuration.YTApiKey, configuration.YTChannelURL)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	botURL := configuration.TGBotURL + configuration.TGBotToken
+	log.Println("Creating Telegram bot client")
 	offset := 0
-
-	bot := NewBot(botURL, offset, yt)
+	bot := NewBot(configuration.TGBotURL+configuration.TGBotToken, offset, yt)
 	for {
 		updates, err := bot.GetUpdates()
 		if err != nil {

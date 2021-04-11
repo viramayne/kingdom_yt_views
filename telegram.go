@@ -75,6 +75,7 @@ func (b *Bot) SendResponse(update Update) error {
 	var msg BotMessage
 	var text string = fmt.Sprintf("Current count of views and likes on videos\n%18s|%15s|%15s|\t%s", "Views", "Likes", "Dislikes", "Name")
 	var vid_ids *[]string
+
 	switch update.Message.Text {
 	case "/start":
 		text = fmt.Sprintf("Hello %s %s!", update.Message.Chat.FirstName, update.Message.Chat.LastName)
@@ -85,11 +86,12 @@ func (b *Bot) SendResponse(update Update) error {
 	default:
 		text = "Can not recognize command"
 	}
+
 	resp, err := b.YT.MakeReqYTViews(vid_ids)
 	if err != nil {
 		log.Println(err)
-
 	}
+
 	if resp != nil {
 		for i, v := range resp.Items {
 			text += fmt.Sprintf("\n%2d:%15v|%12v|%15v|\t<a href=\"http://y2u.be/%s\">%s</a>\n",

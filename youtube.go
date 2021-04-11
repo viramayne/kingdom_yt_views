@@ -250,8 +250,10 @@ func getListOfVideos(api, channelID string) (map[string]*[]string, error) {
 	for _, item := range resp.Items {
 		if strings.HasPrefix(item.Snippet.Title, "[풀버전]") {
 			if _, _, day := item.Snippet.PublishedTime.Date(); day == 1 {
+				// Introduction stage was aired at 2021-04-01
 				intro = append(intro, item.Id.VideoID)
 			} else if day == 8 || day == 15 {
+				// 1 round was aired 2021-04-08 (and will be 2021-04-15)
 				round1 = append(round1, item.Id.VideoID)
 			}
 		}
