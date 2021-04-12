@@ -73,8 +73,10 @@ func (b *Bot) GetUpdates() ([]Update, error) {
 
 func (b *Bot) SendResponse(update Update) error {
 	var msg BotMessage
+	var resp *Resp
+	var err error
 	var text string = fmt.Sprintf("Current count of views and likes on videos\n%18s|%15s|%15s|\t%s", "Views", "Likes", "Dislikes", "Name")
-	var vid_ids *[]string
+	var vid_ids *[]string = nil
 
 	switch update.Message.Text {
 	case "/start":
@@ -87,17 +89,19 @@ func (b *Bot) SendResponse(update Update) error {
 		text = "Can not recognize command"
 	}
 
-	resp, err := b.YT.MakeReqYTViews(vid_ids)
-	if err != nil {
-		log.Println(err)
-	}
-
-	if resp != nil {
-		for i, v := range resp.Items {
-			text += fmt.Sprintf("\n%2d:%15v|%12v|%15v|\t<a href=\"http://y2u.be/%s\">%s</a>\n",
-				i+1, v.Statistics.Views, v.Statistics.Likes, v.Statistics.Dislikes, v.Id, v.Snippet.Title)
+	if vid_ids != nil {
+		resp, err = b.YT.MakeReqYTViews(vid_ids)
+		if err != nil {
+			log.Println(err)
+		}
+		if resp != nil {
+			for i, v := range resp.Items {
+				text += fmt.Sprintf("\n%2d:%15v|%12v|%15v|\t<a href=\"http://y2u.be/%s\">%s</a>\n",
+					i+1, v.Statistics.Views, v.Statistics.Likes, v.Statistics.Dislikes, v.Id, v.Snippet.Title)
+			}
 		}
 	}
+
 	msg.ChatId = update.Message.Chat.ChatId
 	msg.Text = text
 	msg.ParseMode = "HTML"

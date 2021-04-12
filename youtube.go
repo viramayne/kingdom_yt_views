@@ -150,6 +150,9 @@ func (yt *YTStat) getVideoIds(vid_ids *[]string) string {
 	for _, id := range *vid_ids {
 		ids += id + ","
 	}
+	if len(ids) == 0 {
+		return ""
+	}
 	return ids[:len(ids)-1]
 }
 
@@ -159,6 +162,8 @@ func (yt *YTStat) getStatistics(vid_ids *[]string) (*Resp, error) {
 		return nil, errors.New("can not get statistics for no list of videos")
 	}
 	var resp Resp
+	// GET https://youtube.googleapis.com/youtube/v3/videos?part=snippet%2CcontentDetails%2Cstatistics
+	// &id=Ks-_Mh1QhMc&key=[YOUR_API_KEY] HTTP/1.1
 
 	request, err := http.NewRequest("GET", videosURL, nil)
 	if err != nil {
@@ -167,6 +172,9 @@ func (yt *YTStat) getStatistics(vid_ids *[]string) (*Resp, error) {
 	}
 
 	vidIds := yt.getVideoIds(vid_ids)
+	if vidIds == "" {
+		return nil, errors.New("videos was not found")
+	}
 	query := request.URL.Query()
 	query.Add("key", yt.Api)
 	query.Add("id", vidIds)
@@ -215,7 +223,7 @@ func getListOfVideos(api, channelID string) (map[string]*[]string, error) {
 	query.Add("part", "snippet")
 	query.Add("order", "date")
 	query.Add("publishedAfter", "2021-03-31T00:00:00Z")
-	query.Add("maxResults", "25")
+	query.Add("maxResults", "50")
 	query.Add("q", "풀버전 킹덤 레전더리워")
 	query.Add("key", api)
 
