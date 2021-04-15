@@ -79,12 +79,20 @@ func (b *Bot) SendResponse(update Update) error {
 	var vid_ids *[]string = nil
 
 	switch update.Message.Text {
+
 	case "/start":
 		text = fmt.Sprintf("Hello %s %s!", update.Message.Chat.FirstName, update.Message.Chat.LastName)
+
 	case "/introduction_stage":
-		vid_ids = b.YT.Videos["intro"]
+		if b.YT.Videos["2021-04-01"] != nil {
+			vid_ids = b.YT.Videos["2021-04-01"]
+		}
+
 	case "/1_round":
-		vid_ids = b.YT.Videos["1_round"]
+		if b.YT.Videos["2021-04-08"] != nil && b.YT.Videos["2021-04-15"] != nil {
+			vid_ids = ConcatinateArrays(*b.YT.Videos["2021-04-08"], *b.YT.Videos["2021-04-15"])
+		}
+
 	default:
 		text = "Can not recognize command"
 	}

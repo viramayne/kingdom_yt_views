@@ -29,6 +29,8 @@ func main() {
 		TGBotURL:     os.Getenv("TELEGRAM_URL"),
 	}
 
+	// 	conStr := fmt.Sprintf("dbname=%s user=%s password=%s host=%s port=%s sslmode=disable",
+	// *dbName, *dbUser, *dbPassword, *dbHost, *dbPort)
 	log.Printf("Creating YouTube client for %s\n", configuration.YTChannelURL)
 	yt, err := NewYTStat(configuration.YTApiKey, configuration.YTChannelURL)
 	if err != nil {

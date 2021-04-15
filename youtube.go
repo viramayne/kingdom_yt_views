@@ -72,7 +72,7 @@ func NewYTStat(api string, channelURL string) (*YTStat, error) {
 	}
 	return &YTStat{Api: api,
 		ChannelID: channelID,
-		Videos:    videos}, nil
+		Videos:    *videos}, nil
 }
 
 func makeReqForChannelID(channelURL string, api string) (string, error) {
@@ -207,7 +207,30 @@ func (yt *YTStat) getStatistics(vid_ids *[]string) (*Resp, error) {
 	return &resp, nil
 }
 
-func getListOfVideos(api, channelID string) (map[string]*[]string, error) {
+func getListOfVideos(api, channelID string) (*map[string]*[]string, error) {
+	dateIntro := time.Date(2021, 04, 01, 0, 0, 0, 0, time.Local)
+	date1Round1Day := time.Date(2021, 04, 8, 0, 0, 0, 0, time.Local)
+	date1Round2Day := time.Date(2021, 04, 15, 0, 0, 0, 0, time.Local)
+
+	videos := make(map[string]*[]string)
+	videos, err := getDataByPublishedDay(videos, channelID, api, &dateIntro)
+	if err != nil {
+		return nil, err
+	}
+	videos, err = getDataByPublishedDay(videos, channelID, api, &date1Round1Day)
+	if err != nil {
+		return nil, err
+	}
+	videos, err = getDataByPublishedDay(videos, channelID, api, &date1Round2Day)
+	if err != nil {
+		return nil, err
+	}
+
+	return &videos, nil
+}
+
+func getDataByPublishedDay(videos map[string]*[]string, channelID string, api string,
+	publishedAfter *time.Time) (map[string]*[]string, error) {
 	var resp RespSearch
 
 	request, err := http.NewRequest("GET", searchURL, nil)
@@ -215,16 +238,20 @@ func getListOfVideos(api, channelID string) (map[string]*[]string, error) {
 		log.Println(err)
 		return nil, err
 	}
-	// GET https://youtube.googleapis.com/youtube/v3/search?part=snippet&channelId=UCbD8EppRX3ZwJSou-TVo90A&
-	// order=date&publishedAfter=2021-03-31T00%3A00%3A00Z&q=%5B%ED%92%80%EB%B2%84%EC%A0%84%20&key=[YOUR_API_KEY] HTTP/1.1
-
+	today := time.Now()
 	query := request.URL.Query()
 	query.Add("channelId", channelID)
 	query.Add("part", "snippet")
 	query.Add("order", "date")
-	query.Add("publishedAfter", "2021-03-31T00:00:00Z")
-	query.Add("maxResults", "50")
-	query.Add("q", "풀버전 킹덤 레전더리워")
+	query.Add("publishedAfter", publishedAfter.Format("2006-01-02T15:04:05Z"))
+	// log.Println("publishedAfter: " + publishedAfter.Format("2006-01-02T15:04:05Z"))
+	if publishedAfter.Day() < today.Day() {
+		publishedBefore := publishedAfter.Add(24 * time.Hour)
+		query.Add("publishedBefore", publishedBefore.Format("2006-01-02T15:04:05Z"))
+		// log.Println("publishedBefore: " + publishedBefore.Format("2006-01-02T15:04:05Z"))
+	}
+	query.Add("maxResults", "25")
+	query.Add("q", "[풀버전]")
 	query.Add("key", api)
 
 	request.URL.RawQuery = query.Encode()
@@ -251,22 +278,16 @@ func getListOfVideos(api, channelID string) (map[string]*[]string, error) {
 	if len(resp.Items) == 0 {
 		return nil, errors.New("no results")
 	}
-	videos := make(map[string]*[]string)
-	intro := make([]string, 0, 6)
-	round1 := make([]string, 0, 6)
+
+	videosForDay := make([]string, 0, 6)
+	date := publishedAfter.Format("2006-01-02")
 
 	for _, item := range resp.Items {
 		if strings.HasPrefix(item.Snippet.Title, "[풀버전]") {
-			if _, _, day := item.Snippet.PublishedTime.Date(); day == 1 {
-				// Introduction stage was aired at 2021-04-01
-				intro = append(intro, item.Id.VideoID)
-			} else if day == 8 || day == 15 {
-				// 1 round was aired 2021-04-08 (and will be 2021-04-15)
-				round1 = append(round1, item.Id.VideoID)
-			}
+			videosForDay = append(videosForDay, item.Id.VideoID)
 		}
 	}
-	videos["intro"] = &intro
-	videos["1_round"] = &round1
+
+	videos[date] = &videosForDay
 	return videos, nil
 }
