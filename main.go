@@ -16,10 +16,6 @@ type Config struct {
 
 func main() {
 	defer log.Printf("%s exiting", appname)
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "3000"
-	}
 
 	log.Println("Getting parameters from env")
 	configuration := Config{
