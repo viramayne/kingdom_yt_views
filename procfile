@@ -1,1 +1,1 @@
-worker: bin/kingdom_yt_views
+web: bin/kingdom_yt_views
