@@ -67,11 +67,11 @@ func StartBot() {
 			//Отправлем подготовленное сообщение
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, msgText)
 			msg.ParseMode = "HTML"
-			sentMsg, err := bot.Send(msg)
+			_, err := bot.Send(msg)
 			if err != nil {
 				log.Println(err)
 			}
-			log.Println(sentMsg.Text)
+			// log.Println(sentMsg.Text)
 
 		}
 	}
