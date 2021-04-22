@@ -26,7 +26,7 @@ func StartBot() {
 	// Обновляем список видео выступлений
 	err = yt.UpdateVideoIDList()
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 
 	//Устанавливаем время обновления

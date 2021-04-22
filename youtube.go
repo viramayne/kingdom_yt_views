@@ -214,6 +214,8 @@ func (yt *YTStat) updateListOfVideos() (*map[string]*[]string, error) {
 	dateIntro := time.Date(2021, 04, 01, 0, 0, 0, 0, time.Local)
 	date1Round1Day := time.Date(2021, 04, 8, 0, 0, 0, 0, time.Local)
 	date1Round2Day := time.Date(2021, 04, 15, 0, 0, 0, 0, time.Local)
+	date2Round1Day := time.Date(2021, 04, 22, 0, 0, 0, 0, time.Local)
+	date2Round2Day := time.Date(2021, 04, 29, 0, 0, 0, 0, time.Local)
 
 	videos := make(map[string]*[]string)
 	yt.Videos = videos
@@ -229,12 +231,25 @@ func (yt *YTStat) updateListOfVideos() (*map[string]*[]string, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	err = yt.getDataByPublishedDay(&date2Round1Day)
+	if err != nil {
+		return nil, err
+	}
+	err = yt.getDataByPublishedDay(&date2Round2Day)
+	if err != nil {
+		return nil, err
+	}
 	return &videos, nil
 }
 
 // получаем список видео за указанную дату публикации
 func (yt *YTStat) getDataByPublishedDay(publishedAfter *time.Time) error {
+
+	today := time.Now()
+	if publishedAfter.After(today) {
+		return errors.New("no video on channel yet")
+	}
+
 	var resp RespSearch
 
 	request, err := http.NewRequest("GET", searchURL, nil)
@@ -242,7 +257,7 @@ func (yt *YTStat) getDataByPublishedDay(publishedAfter *time.Time) error {
 		log.Println(err)
 		return err
 	}
-	today := time.Now()
+
 	query := request.URL.Query()
 	query.Add("channelId", yt.ChannelID)
 	query.Add("part", "snippet")
@@ -306,7 +321,8 @@ func (yt *YTStat) FillMsgForFirstRound() string {
 }
 
 func (yt *YTStat) FillMsgForSecondRound() string {
-	return yt.formMsgForDate("2021-04-22")
+	return yt.formMsgForDate("2021-04-22") + "\n" +
+		yt.formMsgForDate("2021-04-29")
 }
 
 func (yt *YTStat) formMsgForDate(date string) string {
