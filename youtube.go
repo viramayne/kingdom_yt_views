@@ -326,9 +326,9 @@ func (yt *YTStat) FillMsgForSecondRound() string {
 }
 
 func (yt *YTStat) formMsgForDate(date string) string {
-	var text string
+	var text string = fmt.Sprintf("\naired %s:\n", date)
 	if yt.Videos[date] == nil {
-		return "\nNo videos for perfomances on channel.\n<i><b>Perhaps round not aired yet!</b></i>"
+		return text + "\nNo videos for perfomances on channel.\n<i><b>Perhaps round not aired yet!</b></i>"
 	}
 	resp, err := yt.getStatistics(date)
 	if err != nil {

@@ -49,20 +49,24 @@ func StartBot() {
 		//Проверяем что от пользователья пришло именно текстовое сообщение
 		if reflect.TypeOf(update.Message.Text).Kind() == reflect.String && update.Message.Text != "" {
 			var msgText string
-			var headTxt string = fmt.Sprintf("Current count of views and likes on videos\n%18s|%15s|%15s|\t%s\n",
+			var headerTxt string = "Current count of views and likes on videos for\n"
+			var headTxt string = fmt.Sprintf("%18s|%15s|%15s|\t%s\n",
 				"Views", "Likes", "Dislikes", "Name")
 			switch update.Message.Text {
 			case "/start":
 				msgText = fillMsgForStart(update.Message.Chat.FirstName, update.Message.Chat.LastName)
 
 			case "/introduction_stage":
-				msgText = headTxt + yt.FillMsgForIntro()
+				msgText = headerTxt + "<b>INTRODUCTION STAGE</b>\n"
+				msgText += headTxt + yt.FillMsgForIntro()
 
 			case "/1_round":
-				msgText = headTxt + yt.FillMsgForFirstRound()
+				msgText = headerTxt + "<b>1 round: TO THE WORLD</b>\n"
+				msgText += headTxt + yt.FillMsgForFirstRound()
 
 			case "/2_round":
-				msgText = headTxt + yt.FillMsgForSecondRound()
+				msgText = headerTxt + "<b>2 round: RE-BORN</b>\n"
+				msgText += headTxt + yt.FillMsgForSecondRound()
 			}
 			//Отправлем подготовленное сообщение
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, msgText)
@@ -72,7 +76,6 @@ func StartBot() {
 				log.Println(err)
 			}
 			// log.Println(sentMsg.Text)
-
 		}
 	}
 }
