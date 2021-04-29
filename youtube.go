@@ -336,10 +336,12 @@ func (yt *YTStat) formMsgForDate(date string) string {
 	}
 	resp.sortRespByViews()
 
+	b := BeautifyNumbers
+
 	if resp != nil {
 		for i, v := range resp.Items {
 			text += fmt.Sprintf("\n%2d:%15v|%12v|%15v|\t<a href=\"http://y2u.be/%s\">%s</a>\n",
-				i+1, v.Statistics.Views, v.Statistics.Likes, v.Statistics.Dislikes,
+				i+1, b(v.Statistics.Views), b(v.Statistics.Likes), b(v.Statistics.Dislikes),
 				v.Id, v.Snippet.Title)
 		}
 	}
