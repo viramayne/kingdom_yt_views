@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"reflect"
+	"strings"
 
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
 )
@@ -52,6 +53,7 @@ func StartBot() {
 			var headerTxt string = "Current count of views and likes on videos for\n"
 			var headTxt string = fmt.Sprintf("%18s|%15s|%15s|\t%s\n",
 				"Views", "Likes", "Dislikes", "Name")
+
 			switch update.Message.Text {
 			case "/start":
 				msgText = fillMsgForStart(update.Message.Chat.FirstName, update.Message.Chat.LastName)
@@ -67,6 +69,15 @@ func StartBot() {
 			case "/2_round":
 				msgText = headerTxt + "<b>2 round: RE-BORN</b>\n"
 				msgText += headTxt + yt.FillMsgForSecondRound()
+
+			default:
+				// make requst for video
+				if strings.HasPrefix(update.Message.Text, "url ") {
+					url := strings.Split(update.Message.Text, "url ")
+					msgText += yt.FillMsgForVideo(url[1])
+				} else {
+					msgText = "Can not recognise command"
+				}
 			}
 			//Отправлем подготовленное сообщение
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, msgText)

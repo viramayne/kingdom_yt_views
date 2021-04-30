@@ -133,7 +133,9 @@ func (yt *YTStat) GetVideoStatisticsForDate(date string) (*Resp, error) {
 	if yt.Videos[date] == nil || len(*yt.Videos[date]) == 0 {
 		return nil, errors.New("no video to make request")
 	}
-	resp, err := yt.getStatistics(date)
+	idsStr := yt.formVideoIdsString(yt.Videos[date])
+
+	resp, err := yt.getStatistics(idsStr)
 	if err != nil {
 		return nil, err
 	}
@@ -164,8 +166,9 @@ func (yt *YTStat) formVideoIdsString(vid_ids *[]string) string {
 	return ids[:len(ids)-1]
 }
 
-// getStatistics получение статистики о видео
-func (yt *YTStat) getStatistics(date string) (*Resp, error) {
+// getStatistics получение статистики о спике видео за определенную дату
+// в формате "yyyy-mm-dd"
+func (yt *YTStat) getStatistics(ids string) (*Resp, error) {
 	var resp Resp
 	// GET https://youtube.googleapis.com/youtube/v3/videos?part=snippet%2CcontentDetails%2Cstatistics
 	// &id=Ks-_Mh1QhMc&key=[YOUR_API_KEY] HTTP/1.1
@@ -176,11 +179,9 @@ func (yt *YTStat) getStatistics(date string) (*Resp, error) {
 		return &resp, err
 	}
 
-	vidIdsStr := yt.formVideoIdsString(yt.Videos[date])
-
 	query := request.URL.Query()
 	query.Add("key", yt.Api)
-	query.Add("id", vidIdsStr) // id видео через запятую, если несколько
+	query.Add("id", ids) // id видео через запятую, если несколько
 	query.Add("part", "snippet,statistics")
 	request.URL.RawQuery = query.Encode()
 
@@ -325,12 +326,47 @@ func (yt *YTStat) FillMsgForSecondRound() string {
 		yt.formMsgForDate("2021-04-29")
 }
 
+func (yt *YTStat) FillMsgForVideo(url string) string {
+	return yt.formMsgForVideo(url)
+}
+
+func (yt *YTStat) formMsgForVideo(url string) string {
+	// get video id from url
+	idInd := strings.LastIndex(url, "/") + 1
+	if strings.HasPrefix(url[idInd:], "watch?v=") {
+		idInd += 8
+	}
+
+	// make statistics request
+	var msgTxt string = "Current statistics for video: \n<b>"
+
+	resp, err := yt.getStatistics(url[idInd:])
+	if err != nil {
+		return ""
+	}
+	// form respond msg text
+	b := BeautifyNumbers
+
+	if resp != nil {
+		for _, v := range resp.Items {
+			msgTxt += v.Snippet.Title
+			msgTxt += fmt.Sprintf("</b>\n\n%18s|%15s|%15s\n",
+				"Views", "Likes", "Dislikes")
+			msgTxt += fmt.Sprintf("%15v|%12v|%15v",
+				b(v.Statistics.Views), b(v.Statistics.Likes), b(v.Statistics.Dislikes))
+		}
+	}
+	return msgTxt
+}
+
 func (yt *YTStat) formMsgForDate(date string) string {
 	var text string = fmt.Sprintf("\naired %s:\n", date)
 	if yt.Videos[date] == nil {
 		return text + "\nNo videos for perfomances on channel.\n<i><b>Perhaps round not aired yet!</b></i>"
 	}
-	resp, err := yt.getStatistics(date)
+	idsStr := yt.formVideoIdsString(yt.Videos[date])
+
+	resp, err := yt.getStatistics(idsStr)
 	if err != nil {
 		return err.Error()
 	}
