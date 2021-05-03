@@ -60,24 +60,28 @@ func StartBot() {
 
 			case "/update":
 				yt.UpdateVideoIDList()
-				msgText = "Video ids updated"
+				msgText = "Video ids was updated"
 
-			case "/introduction_stage":
+			case "/introduction":
 				msgText = headerTxt + "<b>INTRODUCTION STAGE</b>\n"
 				msgText += headTxt + yt.FillMsgForIntro()
 
-			case "/1_round":
+			case "/1round":
 				msgText = headerTxt + "<b>1 round: TO THE WORLD</b>\n"
 				msgText += headTxt + yt.FillMsgForFirstRound()
 
-			case "/2_round":
+			case "/2round":
 				msgText = headerTxt + "<b>2 round: RE-BORN</b>\n"
 				msgText += headTxt + yt.FillMsgForSecondRound()
+
+			case "/3round":
+				msgText = headerTxt + "<b>3 round: - </b>\n"
+				msgText += headTxt + yt.FillMsgForThirdRound()
 
 			default:
 				// make requst for video
 				if strings.HasPrefix(update.Message.Text, "url ") {
-					url := strings.Split(update.Message.Text, "url ")
+					url := strings.Split(update.Message.Text, " ")
 					msgText += yt.FillMsgForVideo(url[1])
 				} else {
 					msgText = "Can not recognise command"

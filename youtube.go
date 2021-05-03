@@ -314,6 +314,11 @@ func (yt *YTStat) FillMsgForSecondRound() string {
 		yt.formMsgForDate("2021-04-29")
 }
 
+func (yt *YTStat) FillMsgForThirdRound() string {
+	return yt.formMsgForDate("2021-05-13") + "\n" +
+		yt.formMsgForDate("2021-05-20")
+}
+
 func (yt *YTStat) FillMsgForVideo(url string) string {
 	return yt.formMsgForVideo(url)
 }
