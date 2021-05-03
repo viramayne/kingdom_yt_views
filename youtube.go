@@ -82,15 +82,14 @@ func getChannelID() (string, error) {
 	}
 
 	query := request.URL.Query()
-	query.Add("key", YT_Key)
+	query.Add("part", "id")
 	query.Add("forUsername", YT_Channel[idInd:])
-	query.Add("part", "snippet")
+	query.Add("key", YT_Key)
 	request.URL.RawQuery = query.Encode()
 
 	client := &http.Client{}
 	r, err := client.Do(request)
 	if err != nil {
-
 		return "", err
 	}
 	defer r.Body.Close()
@@ -111,9 +110,6 @@ func getChannelID() (string, error) {
 		return "", errors.New("no result for channel ID")
 	}
 
-	if err != nil {
-		return "", err
-	}
 	return resp.Items[0].Id, nil
 }
 
@@ -212,34 +208,26 @@ func (yt *YTStat) getStatistics(ids string) (*Resp, error) {
 }
 
 func (yt *YTStat) updateListOfVideos() (*map[string]*[]string, error) {
-	dateIntro := time.Date(2021, 04, 01, 0, 0, 0, 0, time.Local)
-	date1Round1Day := time.Date(2021, 04, 8, 0, 0, 0, 0, time.Local)
-	date1Round2Day := time.Date(2021, 04, 15, 0, 0, 0, 0, time.Local)
-	date2Round1Day := time.Date(2021, 04, 22, 0, 0, 0, 0, time.Local)
-	date2Round2Day := time.Date(2021, 04, 29, 0, 0, 0, 0, time.Local)
+
+	dates := make([]time.Time, 0)
+	dates = append(dates,
+		time.Date(2021, 04, 1, 0, 0, 0, 0, time.Local),
+		time.Date(2021, 04, 8, 0, 0, 0, 0, time.Local),
+		time.Date(2021, 04, 15, 0, 0, 0, 0, time.Local),
+		time.Date(2021, 04, 22, 0, 0, 0, 0, time.Local),
+		time.Date(2021, 04, 29, 0, 0, 0, 0, time.Local),
+	)
 
 	videos := make(map[string]*[]string)
 	yt.Videos = videos
-	err := yt.getDataByPublishedDay(&dateIntro)
-	if err != nil {
-		return nil, err
+
+	for _, date := range dates {
+		err := yt.getDataByPublishedDay(&date)
+		if err != nil {
+			return nil, err
+		}
 	}
-	err = yt.getDataByPublishedDay(&date1Round1Day)
-	if err != nil {
-		return nil, err
-	}
-	err = yt.getDataByPublishedDay(&date1Round2Day)
-	if err != nil {
-		return nil, err
-	}
-	err = yt.getDataByPublishedDay(&date2Round1Day)
-	if err != nil {
-		return nil, err
-	}
-	err = yt.getDataByPublishedDay(&date2Round2Day)
-	if err != nil {
-		return nil, err
-	}
+
 	return &videos, nil
 }
 
@@ -265,7 +253,7 @@ func (yt *YTStat) getDataByPublishedDay(publishedAfter *time.Time) error {
 	query.Add("order", "date")
 	query.Add("publishedAfter", publishedAfter.Format("2006-01-02T15:04:05Z"))
 	// log.Println("publishedAfter: " + publishedAfter.Format("2006-01-02T15:04:05Z"))
-	if publishedAfter.Day() < today.Day() {
+	if publishedAfter.Day() != today.Day() {
 		publishedBefore := publishedAfter.Add(24 * time.Hour)
 		query.Add("publishedBefore", publishedBefore.Format("2006-01-02T15:04:05Z"))
 		// log.Println("publishedBefore: " + publishedBefore.Format("2006-01-02T15:04:05Z"))

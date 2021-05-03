@@ -58,6 +58,10 @@ func StartBot() {
 			case "/start":
 				msgText = fillMsgForStart(update.Message.Chat.FirstName, update.Message.Chat.LastName)
 
+			case "/update":
+				yt.UpdateVideoIDList()
+				msgText = "Video ids updated"
+
 			case "/introduction_stage":
 				msgText = headerTxt + "<b>INTRODUCTION STAGE</b>\n"
 				msgText += headTxt + yt.FillMsgForIntro()
