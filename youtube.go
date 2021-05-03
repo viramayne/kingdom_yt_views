@@ -376,3 +376,39 @@ func (yt *YTStat) formMsgForDate(date string) string {
 	}
 	return text
 }
+
+func (yt *YTStat) introMsg() string {
+	var headerTxt string = "Current count of views and likes on videos for\n"
+	var headTxt string = fmt.Sprintf("%18s|%15s|%15s|\t%s\n",
+		"Views", "Likes", "Dislikes", "Name")
+	text := headerTxt + "<b>INTRODUCTION STAGE</b>\n"
+	text += headTxt + yt.FillMsgForIntro()
+	return text
+}
+
+func (yt *YTStat) firstRoundMsg() string {
+	var headerTxt string = "Current count of views and likes on videos for\n"
+	var headTxt string = fmt.Sprintf("%18s|%15s|%15s|\t%s\n",
+		"Views", "Likes", "Dislikes", "Name")
+	text := headerTxt + "<b>1 round: TO THE WORLD</b>\n"
+	text += headTxt + yt.FillMsgForFirstRound()
+	return text
+}
+
+func (yt *YTStat) secondRoundMsg() string {
+	var headerTxt string = "Current count of views and likes on videos for\n"
+	var headTxt string = fmt.Sprintf("%18s|%15s|%15s|\t%s\n",
+		"Views", "Likes", "Dislikes", "Name")
+	text := headerTxt + "<b>2 round: RE-BORN</b>\n"
+	text += headTxt + yt.FillMsgForSecondRound()
+	return text
+}
+
+func (yt *YTStat) thirdRoundMsg() string {
+	var headerTxt string = "Current count of views and likes on videos for\n"
+	var headTxt string = fmt.Sprintf("%18s|%15s|%15s|\t%s\n",
+		"Views", "Likes", "Dislikes", "Name")
+	text := headerTxt + "<b>3 round: - </b>\n"
+	text += headTxt + yt.FillMsgForThirdRound()
+	return text
+}
