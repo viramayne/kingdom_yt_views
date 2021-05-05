@@ -222,8 +222,7 @@ func (yt *YTStat) updateListOfVideos() (*map[string]*[]string, error) {
 	yt.Videos = videos
 
 	for _, date := range dates {
-		err := yt.getDataByPublishedDay(&date)
-		if err != nil {
+		if err := yt.getDataByPublishedDay(&date); err != nil {
 			return nil, err
 		}
 	}
@@ -278,8 +277,7 @@ func (yt *YTStat) getDataByPublishedDay(publishedAfter *time.Time) error {
 		return err
 	}
 
-	err = json.Unmarshal(body, &resp)
-	if err != nil {
+	if err = json.Unmarshal(body, &resp); err != nil {
 		log.Println(err)
 		return err
 	}
@@ -301,6 +299,7 @@ func (yt *YTStat) getDataByPublishedDay(publishedAfter *time.Time) error {
 }
 
 func (yt *YTStat) FillMsgForIntro() string {
+	// TODO: изменить постоянное указание дат выступлений
 	return yt.formMsgForDate("2021-04-01")
 }
 
@@ -333,9 +332,10 @@ func (yt *YTStat) formMsgForVideo(url string) string {
 	// make statistics request
 	var msgTxt string = "Current statistics for video: \n<b>"
 
+	// TODO: Изменить на получение данных из БД
 	resp, err := yt.getStatistics(url[idInd:])
 	if err != nil {
-		return ""
+		return err.Error()
 	}
 	// form respond msg text
 	b := BeautifyNumbers
@@ -382,6 +382,7 @@ func (yt *YTStat) introMsg() string {
 	var headTxt string = fmt.Sprintf("%18s|%15s|%15s|\t%s\n",
 		"Views", "Likes", "Dislikes", "Name")
 	text := headerTxt + "<b>INTRODUCTION STAGE</b>\n"
+	// TODO: Изменить получение данных о видео из БД
 	text += headTxt + yt.FillMsgForIntro()
 	return text
 }

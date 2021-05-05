@@ -4,13 +4,13 @@ import "bytes"
 
 func BeautifyNumbers(s string) string {
 	var buffer bytes.Buffer
-	var n_1 = 2
-	var l_1 = len(s) - 1
+	var n = 2
+	var l = len(s) - 1
 	str := reverseString(s)
 
 	for i, rune := range str {
 		buffer.WriteRune(rune)
-		if i%3 == n_1 && i != l_1 {
+		if i%3 == n && i != l {
 			buffer.WriteRune(' ')
 		}
 	}

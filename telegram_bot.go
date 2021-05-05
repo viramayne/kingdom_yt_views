@@ -41,6 +41,10 @@ func StartBot() {
 		log.Println(err)
 	}
 
+	// TODO: Добавить инициализацию БД и подключение к ней
+	// по таймеру организовать получение данных о ранее полученных видео
+	// раз в сутки обновлять видео
+
 	//Устанавливаем время обновления
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
@@ -67,19 +71,20 @@ func StartBot() {
 			switch update.CallbackQuery.Data {
 			case "/introduction":
 				msg.Text = yt.introMsg()
-				msg.ReplyMarkup = stageKeyboard
+				// msg.ReplyMarkup = yt.InlineKeyboard(dates)
 
 			case "/1round":
 				msg.Text = yt.firstRoundMsg()
-				msg.ReplyMarkup = stageKeyboard
+				// msg.ReplyMarkup = yt.InlineKeyboard(dates)
 
 			case "/2round":
 				msg.Text = yt.secondRoundMsg()
-				msg.ReplyMarkup = stageKeyboard
+				// msg.ReplyMarkup = yt.InlineKeyboard(dates)
 
 			case "/3round":
 				msg.Text = yt.thirdRoundMsg()
-				msg.ReplyMarkup = stageKeyboard
+				// msg.ReplyMarkup = yt.InlineKeyboard(dates)
+
 			}
 			// Ответ на запрос inline query button
 			bot.Send(msg)
@@ -100,23 +105,24 @@ func StartBot() {
 				case "/update":
 					yt.UpdateVideoIDList()
 					msg.Text = "Video ids was updated"
+					// TODO: добавить вывод полученных id?
 					msg.ReplyMarkup = stageKeyboard
 
 				case "/introduction":
 					msg.Text = yt.introMsg()
-					msg.ReplyMarkup = stageKeyboard
+					// msg.ReplyMarkup = yt.InlineKeyboard(dates)
 
 				case "/1round":
 					msg.Text = yt.firstRoundMsg()
-					msg.ReplyMarkup = stageKeyboard
+					// msg.ReplyMarkup = yt.InlineKeyboard(dates)
 
 				case "/2round":
 					msg.Text = yt.secondRoundMsg()
-					msg.ReplyMarkup = stageKeyboard
+					// msg.ReplyMarkup = yt.InlineKeyboard(dates)
 
 				case "/3round":
 					msg.Text = yt.thirdRoundMsg()
-					msg.ReplyMarkup = stageKeyboard
+					// msg.ReplyMarkup = yt.InlineKeyboard(dates)
 
 				default:
 					// make requst for video
