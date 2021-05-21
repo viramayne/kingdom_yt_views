@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,7 +14,7 @@ import (
 	"time"
 )
 
-// RespSearch struct to get needed info from yt api
+// RespSearch struct to get videoID info from yt api
 type RespSearch struct {
 	Items []ItemSearch `json:"items"`
 }
@@ -27,7 +28,7 @@ type ID struct {
 	VideoID string `json:"videoId"`
 }
 
-// Resp struct to get needed info from yt api
+// Resp struct to get views info  for videoIDs from yt api
 type Resp struct {
 	Items []Item `json:"items"`
 }
@@ -52,7 +53,8 @@ type Statistics struct {
 type YTStat struct {
 	Api       string
 	ChannelID string
-	Videos    map[string]*[]string
+	Db        *sql.DB
+	Tx        *sql.Tx
 }
 
 var (
@@ -67,8 +69,12 @@ func NewYTStatistics() (*YTStat, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &YTStat{Api: YT_Key,
+
+	return &YTStat{
+		Api:       YT_Key,
 		ChannelID: channelID,
+		Db:        nil,
+		Tx:        nil,
 	}, nil
 }
 
@@ -115,21 +121,20 @@ func getChannelID() (string, error) {
 
 // UpdateVideoIDList Обновляет список видео для получения статистики
 func (yt *YTStat) UpdateVideoIDList() error {
-	videos, err := yt.updateListOfVideos()
-	if err != nil {
+	if err := yt.updateListOfVideos(); err != nil {
 		return err
 	}
-	yt.Videos = *videos
 	return nil
 }
 
 // GetVideoStatisticsForDate Отправляет запрос на получение статистики о видео
 // date format "2021-04-01" - date of performance
 func (yt *YTStat) GetVideoStatisticsForDate(date string) (*Resp, error) {
-	if yt.Videos[date] == nil || len(*yt.Videos[date]) == 0 {
+	videos, err := yt.ReadFromDBVideos(date)
+	if err != nil || len(videos) == 0 {
 		return nil, errors.New("no video to make request")
 	}
-	idsStr := yt.formVideoIdsString(yt.Videos[date])
+	idsStr := yt.formVideoIdsString(&videos)
 
 	resp, err := yt.getStatistics(idsStr)
 	if err != nil {
@@ -151,10 +156,10 @@ func (resp *Resp) sortRespByViews() {
 }
 
 // соединение id видео для запроса инфо
-func (yt *YTStat) formVideoIdsString(vid_ids *[]string) string {
+func (yt *YTStat) formVideoIdsString(videos *[]Video) string {
 	var ids string
-	for _, id := range *vid_ids {
-		ids += id + ","
+	for _, id := range *videos {
+		ids += id.VideoID + ","
 	}
 	if len(ids) == 0 {
 		return ""
@@ -207,8 +212,7 @@ func (yt *YTStat) getStatistics(ids string) (*Resp, error) {
 	return &resp, nil
 }
 
-func (yt *YTStat) updateListOfVideos() (*map[string]*[]string, error) {
-
+func (yt *YTStat) updateListOfVideos() error {
 	dates := make([]time.Time, 0)
 	dates = append(dates,
 		time.Date(2021, 04, 1, 0, 0, 0, 0, time.Local),
@@ -216,18 +220,24 @@ func (yt *YTStat) updateListOfVideos() (*map[string]*[]string, error) {
 		time.Date(2021, 04, 15, 0, 0, 0, 0, time.Local),
 		time.Date(2021, 04, 22, 0, 0, 0, 0, time.Local),
 		time.Date(2021, 04, 29, 0, 0, 0, 0, time.Local),
+		time.Date(2021, 05, 13, 0, 0, 0, 0, time.Local),
+		time.Date(2021, 05, 20, 0, 0, 0, 0, time.Local),
+		time.Date(2021, 05, 27, 0, 0, 0, 0, time.Local),
 	)
 
-	videos := make(map[string]*[]string)
-	yt.Videos = videos
-
 	for _, date := range dates {
-		if err := yt.getDataByPublishedDay(&date); err != nil {
-			return nil, err
+		n, err := yt.ReadFromDBVideos(date.String())
+		if err != nil {
+			return err
+		}
+		if len(n) == 0 {
+			if err := yt.getDataByPublishedDay(&date); err != nil {
+				return err
+			}
 		}
 	}
 
-	return &videos, nil
+	return nil
 }
 
 // получаем список видео за указанную дату публикации
@@ -285,16 +295,16 @@ func (yt *YTStat) getDataByPublishedDay(publishedAfter *time.Time) error {
 		return errors.New("no results")
 	}
 
-	videosForDay := make([]string, 0, 6)
-	date := publishedAfter.Format("2006-01-02")
-
 	for _, item := range resp.Items {
 		if strings.HasPrefix(item.Snippet.Title, "[풀버전]") {
-			videosForDay = append(videosForDay, item.Id.VideoID)
+			// Запись в БД
+			if err = yt.WriteToDBVideos(&item); err != nil {
+				return err
+			}
 		}
 	}
 
-	yt.Videos[date] = &videosForDay
+	// yt.Videos = &videos
 	return nil
 }
 
@@ -337,6 +347,7 @@ func (yt *YTStat) formMsgForVideo(url string) string {
 	if err != nil {
 		return err.Error()
 	}
+	resp.sortRespByViews()
 	// form respond msg text
 	b := BeautifyNumbers
 
@@ -354,26 +365,32 @@ func (yt *YTStat) formMsgForVideo(url string) string {
 
 func (yt *YTStat) formMsgForDate(date string) string {
 	var text string = fmt.Sprintf("\naired %s:\n", date)
-	if yt.Videos[date] == nil {
-		return text + "\nNo videos for perfomances on channel.\n<i><b>Perhaps round not aired yet!</b></i>"
-	}
-	idsStr := yt.formVideoIdsString(yt.Videos[date])
 
-	resp, err := yt.getStatistics(idsStr)
+	videoIds, err := yt.GetVideosForDateFromBD(date)
+	if err != nil || len(videoIds) == 0 {
+		return "no video to make request"
+	}
+
+	resp, err := yt.ReadFromDBStatistics(videoIds)
 	if err != nil {
 		return err.Error()
 	}
-	resp.sortRespByViews()
-
+	sort.Slice(resp, func(i, j int) (less bool) {
+		return resp[i].Views > resp[j].Views
+	})
 	b := BeautifyNumbers
 
-	if resp != nil {
-		for i, v := range resp.Items {
-			text += fmt.Sprintf("\n%2d:%15v|%12v|%15v|\t<a href=\"http://y2u.be/%s\">%s</a>\n",
-				i+1, b(v.Statistics.Views), b(v.Statistics.Likes), b(v.Statistics.Dislikes),
-				v.Id, v.Snippet.Title)
+	for i, v := range resp {
+		title, err := yt.GetVideoTitleFromDB(v.VideoID)
+		if err != nil {
+			log.Println(err)
+			continue
 		}
+		text += fmt.Sprintf("\n%2d:%15v|%12v|%15v|\t<a href=\"http://y2u.be/%s\">%s</a>\n",
+			i+1, b(fmt.Sprint(v.Views)), b(fmt.Sprint(v.Likes)), b(fmt.Sprint(v.Dislikes)),
+			v.VideoID, title)
 	}
+
 	return text
 }
 

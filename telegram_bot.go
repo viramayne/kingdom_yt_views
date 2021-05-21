@@ -32,18 +32,20 @@ func StartBot() {
 	// Инициализируем связь с YouTube
 	yt, err := NewYTStatistics()
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
+	db, err := ConnectToDB()
+	if err != nil {
+		log.Panic(err)
+	}
+	defer db.Close()
+	yt.Db = db
 
 	// Обновляем список видео выступлений
 	err = yt.UpdateVideoIDList()
 	if err != nil {
-		log.Println(err)
+		log.Panic(err)
 	}
-
-	// TODO: Добавить инициализацию БД и подключение к ней
-	// по таймеру организовать получение данных о ранее полученных видео
-	// раз в сутки обновлять видео
 
 	//Устанавливаем время обновления
 	u := tgbotapi.NewUpdate(0)
@@ -57,12 +59,14 @@ func StartBot() {
 
 	go http.ListenAndServe(":"+Port, nil)
 	log.Printf("start listen :%s", Port)
+
 	for update := range updates {
+		yt.UpdateVideoStatistics()
 
 		// Запрос от inline button
 		if update.CallbackQuery != nil {
 			fmt.Print(update)
-
+			yt.UpdateVideoStatistics()
 			bot.AnswerCallbackQuery(tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data))
 
 			msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Data)
@@ -93,7 +97,7 @@ func StartBot() {
 		// Если от пользователя пришло текстовое сообщение, в т.ч. комманды
 		if update.Message != nil {
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-
+			yt.UpdateVideoStatistics()
 			//Проверяем что от пользователья пришло именно текстовое сообщение
 			if reflect.TypeOf(update.Message.Text).Kind() == reflect.String && update.Message.Text != "" {
 
@@ -104,6 +108,8 @@ func StartBot() {
 
 				case "/update":
 					yt.UpdateVideoIDList()
+					// ПЕрезапись видео в БД
+
 					msg.Text = "Video ids was updated"
 					// TODO: добавить вывод полученных id?
 					msg.ReplyMarkup = stageKeyboard
@@ -147,4 +153,23 @@ func StartBot() {
 
 func fillMsgForStart(chatFirstName, chatLastName string) string {
 	return fmt.Sprintf("Hello %s %s!", chatFirstName, chatLastName)
+}
+
+func (yt *YTStat) UpdateVideoStatistics() {
+	// get videos from db.videos
+	videoIds, err := yt.GetVideoIds()
+	if err != nil {
+		log.Panic(err)
+	}
+
+	// make request to yt api
+	resp, err := yt.getStatistics(videoIds)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	// save data to db.statistics
+	if err = yt.WriteToDBStatistics(resp); err != nil {
+		log.Panic(err)
+	}
 }
