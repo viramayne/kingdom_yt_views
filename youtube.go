@@ -146,7 +146,7 @@ func (yt *YTStat) GetVideoStatisticsForDate(date string) (*Resp, error) {
 	return resp, nil
 }
 
-// Сортировка полученной информации по количеству просмотров видео в убывающем порядке
+// Сортировка полученной информации по убыванию числа просмотров
 func (resp *Resp) sortRespByViews() {
 	sort.Slice(resp.Items, func(i, j int) (less bool) {
 		iv, _ := strconv.ParseInt(resp.Items[i].Statistics.Views, 10, 64)
@@ -215,14 +215,15 @@ func (yt *YTStat) getStatistics(ids string) (*Resp, error) {
 func (yt *YTStat) updateListOfVideos() error {
 	dates := make([]time.Time, 0)
 	dates = append(dates,
-		time.Date(2021, 04, 1, 0, 0, 0, 0, time.Local),
-		time.Date(2021, 04, 8, 0, 0, 0, 0, time.Local),
-		time.Date(2021, 04, 15, 0, 0, 0, 0, time.Local),
-		time.Date(2021, 04, 22, 0, 0, 0, 0, time.Local),
-		time.Date(2021, 04, 29, 0, 0, 0, 0, time.Local),
-		time.Date(2021, 05, 13, 0, 0, 0, 0, time.Local),
-		time.Date(2021, 05, 20, 0, 0, 0, 0, time.Local),
-		time.Date(2021, 05, 27, 0, 0, 0, 0, time.Local),
+		time.Date(2021, 04, 1, 0, 0, 0, 0, time.Local),  // intro
+		time.Date(2021, 04, 8, 0, 0, 0, 0, time.Local),  // 1 round
+		time.Date(2021, 04, 15, 0, 0, 0, 0, time.Local), // 1 round
+		time.Date(2021, 04, 22, 0, 0, 0, 0, time.Local), // 2 round
+		time.Date(2021, 04, 29, 0, 0, 0, 0, time.Local), // 2 round
+		// 2021-05-06 - sport competition w/o performances
+		time.Date(2021, 05, 13, 0, 0, 0, 0, time.Local), // 3 round 1 part
+		time.Date(2021, 05, 20, 0, 0, 0, 0, time.Local), // 3 round 1 + 2 part
+		time.Date(2021, 05, 27, 0, 0, 0, 0, time.Local), // 3 round 2 part
 	)
 
 	for _, date := range dates {
@@ -243,9 +244,9 @@ func (yt *YTStat) updateListOfVideos() error {
 // получаем список видео за указанную дату публикации
 func (yt *YTStat) getDataByPublishedDay(publishedAfter *time.Time) error {
 
-	today := time.Now()
-	if publishedAfter.After(today) {
-		return errors.New("no video on channel yet")
+	now := time.Now()
+	if publishedAfter.After(now) {
+		return errors.New("no video on channel yet for date: " + publishedAfter.String())
 	}
 
 	var resp RespSearch
@@ -261,11 +262,9 @@ func (yt *YTStat) getDataByPublishedDay(publishedAfter *time.Time) error {
 	query.Add("part", "snippet")
 	query.Add("order", "date")
 	query.Add("publishedAfter", publishedAfter.Format("2006-01-02T15:04:05Z"))
-	// log.Println("publishedAfter: " + publishedAfter.Format("2006-01-02T15:04:05Z"))
-	if publishedAfter.Day() != today.Day() {
+	if publishedAfter.Day() != now.Day() {
 		publishedBefore := publishedAfter.Add(24 * time.Hour)
 		query.Add("publishedBefore", publishedBefore.Format("2006-01-02T15:04:05Z"))
-		// log.Println("publishedBefore: " + publishedBefore.Format("2006-01-02T15:04:05Z"))
 	}
 	query.Add("maxResults", "25")
 	query.Add("q", "[풀버전]")
@@ -304,32 +303,7 @@ func (yt *YTStat) getDataByPublishedDay(publishedAfter *time.Time) error {
 		}
 	}
 
-	// yt.Videos = &videos
 	return nil
-}
-
-func (yt *YTStat) FillMsgForIntro() string {
-	// TODO: изменить постоянное указание дат выступлений
-	return yt.formMsgForDate("2021-04-01")
-}
-
-func (yt *YTStat) FillMsgForFirstRound() string {
-	return yt.formMsgForDate("2021-04-08") + "\n" +
-		yt.formMsgForDate("2021-04-15")
-}
-
-func (yt *YTStat) FillMsgForSecondRound() string {
-	return yt.formMsgForDate("2021-04-22") + "\n" +
-		yt.formMsgForDate("2021-04-29")
-}
-
-func (yt *YTStat) FillMsgForThirdRound() string {
-	return yt.formMsgForDate("2021-05-13") + "\n" +
-		yt.formMsgForDate("2021-05-20")
-}
-
-func (yt *YTStat) FillMsgForVideo(url string) string {
-	return yt.formMsgForVideo(url)
 }
 
 func (yt *YTStat) formMsgForVideo(url string) string {
@@ -342,16 +316,16 @@ func (yt *YTStat) formMsgForVideo(url string) string {
 	// make statistics request
 	var msgTxt string = "Current statistics for video: \n<b>"
 
-	// TODO: Изменить на получение данных из БД
+	// request to youtube api
 	resp, err := yt.getStatistics(url[idInd:])
 	if err != nil {
 		return err.Error()
 	}
-	resp.sortRespByViews()
+
 	// form respond msg text
 	b := BeautifyNumbers
 
-	if resp != nil {
+	if resp != nil && resp.Items != nil {
 		for _, v := range resp.Items {
 			msgTxt += v.Snippet.Title
 			msgTxt += fmt.Sprintf("</b>\n\n%18s|%15s|%15s\n",
@@ -361,72 +335,4 @@ func (yt *YTStat) formMsgForVideo(url string) string {
 		}
 	}
 	return msgTxt
-}
-
-func (yt *YTStat) formMsgForDate(date string) string {
-	var text string = fmt.Sprintf("\naired %s:\n", date)
-
-	videoIds, err := yt.GetVideosForDateFromBD(date)
-	if err != nil || len(videoIds) == 0 {
-		return "no video to make request"
-	}
-
-	resp, err := yt.ReadFromDBStatistics(videoIds)
-	if err != nil {
-		return err.Error()
-	}
-	sort.Slice(resp, func(i, j int) (less bool) {
-		return resp[i].Views > resp[j].Views
-	})
-	b := BeautifyNumbers
-
-	for i, v := range resp {
-		title, err := yt.GetVideoTitleFromDB(v.VideoID)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		text += fmt.Sprintf("\n%2d:%15v|%12v|%15v|\t<a href=\"http://y2u.be/%s\">%s</a>\n",
-			i+1, b(fmt.Sprint(v.Views)), b(fmt.Sprint(v.Likes)), b(fmt.Sprint(v.Dislikes)),
-			v.VideoID, title)
-	}
-
-	return text
-}
-
-func (yt *YTStat) introMsg() string {
-	var headerTxt string = "Current count of views and likes on videos for\n"
-	var headTxt string = fmt.Sprintf("%18s|%15s|%15s|\t%s\n",
-		"Views", "Likes", "Dislikes", "Name")
-	text := headerTxt + "<b>INTRODUCTION STAGE</b>\n"
-	// TODO: Изменить получение данных о видео из БД
-	text += headTxt + yt.FillMsgForIntro()
-	return text
-}
-
-func (yt *YTStat) firstRoundMsg() string {
-	var headerTxt string = "Current count of views and likes on videos for\n"
-	var headTxt string = fmt.Sprintf("%18s|%15s|%15s|\t%s\n",
-		"Views", "Likes", "Dislikes", "Name")
-	text := headerTxt + "<b>1 round: TO THE WORLD</b>\n"
-	text += headTxt + yt.FillMsgForFirstRound()
-	return text
-}
-
-func (yt *YTStat) secondRoundMsg() string {
-	var headerTxt string = "Current count of views and likes on videos for\n"
-	var headTxt string = fmt.Sprintf("%18s|%15s|%15s|\t%s\n",
-		"Views", "Likes", "Dislikes", "Name")
-	text := headerTxt + "<b>2 round: RE-BORN</b>\n"
-	text += headTxt + yt.FillMsgForSecondRound()
-	return text
-}
-
-func (yt *YTStat) thirdRoundMsg() string {
-	var headerTxt string = "Current count of views and likes on videos for\n"
-	var headTxt string = fmt.Sprintf("%18s|%15s|%15s|\t%s\n",
-		"Views", "Likes", "Dislikes", "Name")
-	text := headerTxt + "<b>3 round: - </b>\n"
-	text += headTxt + yt.FillMsgForThirdRound()
-	return text
 }
