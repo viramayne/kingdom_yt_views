@@ -61,6 +61,14 @@ var (
 	channelsURL string = "https://youtube.googleapis.com/youtube/v3/channels"
 	videosURL   string = "https://youtube.googleapis.com/youtube/v3/videos"
 	searchURL   string = "https://youtube.googleapis.com/youtube/v3/search"
+
+	ateezVideoIds = [...]string{""}
+	skzVideoIds   = [...]string{"AdfIfFGCqgo", "Sy3ERg7OCWo", "Xo8FPXlI3CU", "u6unJQownW4", "a4jiotDjHe4", "rXEy8r5P_vc",
+		"pok5yDw77uM", "y289In1OdZI", "CNfodZluR-Q", "BcXwZEbOvpo", "Dab4EENTW5I", "5rPluw_-Eb4", "UWoyeuwj9c0", "Fpgd3ac3_nM",
+		"KAPXc0M4tLg", "ra0FlN5NBG4", "XkxWIAe3NDU", "TQTlCHxyuu8", "XZSv3aMGg5Q", "X-uJtV8ScYk", "M7lIml8-eHU", "EaswWiwMVs8",
+		"YLtEc-kvOqA", "HHZrmKlm4Jo", "a4jiotDjHe4", "Fy3zu0WsTLM", "uLGF1RKUHSk", "12N0qEr_RGk", "wfd6_PIZong", "4Xv5HJo5AFw",
+		"KvOoSNLpqWo", "3R19jESEY0c", "gWaCN9vpRK8", "ZnpEBYvgiAU", "En4jap4MPbY", "LYJDf9oPQ-0", "uaJ81czm3xA", "rpHztlgROH8",
+		"v202rmUuBis", "AsBU3IUTHZw", "k8Y6ZTjmCXs"}
 )
 
 func NewYTStatistics() (*YTStat, error) {
@@ -314,7 +322,7 @@ func (yt *YTStat) formMsgForVideo(url string) string {
 	}
 
 	// make statistics request
-	var msgTxt string = "Current statistics for video: \n<b>"
+	var msgTxt string = "\nCurrent statistics for video: \n<b>"
 
 	// request to youtube api
 	resp, err := yt.getStatistics(url[idInd:])

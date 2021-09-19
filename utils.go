@@ -28,3 +28,14 @@ func reverseString(s string) string {
 	str := buffer.String()
 	return str
 }
+
+func formIdsSrt(ids []string) string {
+	var res string
+	for i, s := range ids {
+		res += s
+		if i != len(ids)-1 {
+			res += ","
+		}
+	}
+	return res
+}

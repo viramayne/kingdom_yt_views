@@ -87,6 +87,12 @@ func StartBot() {
 			case "/3round":
 				msg.Text, msg.ReplyMarkup = yt.thirdRoundMsg()
 
+			case "ateez":
+				msg.Text = yt.ateezMsg()
+
+			case "skz":
+				msg.Text = yt.skzMsg()
+
 			}
 			// Ответ на запрос inline query button
 			bot.Send(msg)
@@ -122,6 +128,12 @@ func StartBot() {
 
 				case "/3round":
 					msg.Text, msg.ReplyMarkup = yt.thirdRoundMsg()
+
+				case "ateez":
+					msg.Text = yt.ateezMsg()
+
+				case "skz":
+					msg.Text = yt.skzMsg()
 
 				default:
 					// make requst for video
@@ -218,6 +230,50 @@ func ThirdRound(yt *YTStat) (string, tgbotapi.InlineKeyboardMarkup) {
 	return text1 + text2 + text3, tgbotapi.NewInlineKeyboardMarkup(bttns...)
 }
 
+func AteezVideos(yt *YTStat) (text string) {
+	ids := formIdsSrt(ateezVideoIds[:])
+	resp, err := yt.getStatistics(ids)
+	if err != nil {
+		log.Println(err)
+	}
+	// form respond msg text
+	b := BeautifyNumbers
+
+	if resp != nil && resp.Items != nil {
+		for _, v := range resp.Items {
+			text += v.Snippet.Title
+			text += fmt.Sprintf("</b>\n\n%18s|%15s|%15s\n",
+				"Views", "Likes", "Dislikes")
+			text += fmt.Sprintf("%15v|%12v|%15v",
+				b(v.Statistics.Views), b(v.Statistics.Likes), b(v.Statistics.Dislikes))
+		}
+	}
+	return
+}
+
+func SKZVideos(yt *YTStat) string {
+	ids := formIdsSrt(skzVideoIds[:])
+	resp, err := yt.getStatistics(ids)
+	if err != nil {
+		log.Println(err)
+	}
+	// form respond msg text
+	b := BeautifyNumbers
+	var text string = "\nCurrent statistics for videos: \n"
+	if resp != nil && resp.Items != nil {
+		// sort.Slice(resp.Items, func(i, j int) (less bool) {
+		// 	return resp.Items[i].Statistics.Views > resp.Items[j].Statistics.Views
+		// })
+
+		for i, v := range resp.Items {
+			text += fmt.Sprintf("%d: %s", i+1, v.Snippet.Title)
+			text += fmt.Sprintf("\n%15v|%12v|%15v\n",
+				b(v.Statistics.Views), b(v.Statistics.Likes), b(v.Statistics.Dislikes))
+		}
+	}
+	return text
+}
+
 func VideoByURL(url string, yt *YTStat) string {
 	return yt.formMsgForVideo(url)
 }
@@ -292,4 +348,25 @@ func (yt *YTStat) thirdRoundMsg() (string, tgbotapi.InlineKeyboardMarkup) {
 	text := headerTxt + "<b>3 round: - NO LIMIT </b>\n" + headTxt
 	msgText, replyMarkup := ThirdRound(yt)
 	return text + msgText, replyMarkup
+}
+
+func (yt *YTStat) ateezMsg() string {
+	var headerTxt string = "Current count of views and likes on videos for\n"
+	var headTxt string = fmt.Sprintf("%18s|%15s|%15s|\t%s\n",
+		"Views", "Likes", "Dislikes", "Name")
+	text := headerTxt + "<b>3 round: - NO LIMIT </b>\n" + headTxt
+	msgText := AteezVideos(yt)
+	return text + msgText
+}
+
+func (yt *YTStat) skzMsg() string {
+	var headerTxt string = "Current count of views and likes on videos for\n"
+	var headTxt string = fmt.Sprintf("%18s|%15s|%15s|\t%s\n",
+		"Views", "Likes", "Dislikes", "Name")
+	text := headerTxt + "<b>Stray Kids</b>\n" + headTxt
+	msgText := SKZVideos(yt)
+	if len(msgText) > 4096 {
+		log.Println("more than 4096 characters")
+	}
+	return text + msgText
 }

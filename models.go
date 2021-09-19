@@ -77,21 +77,20 @@ func (yt *YTStat) WriteToDBVideos(item *ItemSearch) error {
 }
 
 // Получить все видео id
-func (yt *YTStat) GetVideoIds() (string, error) {
+func (yt *YTStat) GetVideoIds() (ids string, err error) {
 	request := "SELECT * FROM videos ORDER BY id;"
 
 	rows, err := yt.Db.Query(request)
 	if err != nil {
-		return "", err
+		return
 	}
-	var ids string
 
 	for rows.Next() {
 		var item Video
-		err := rows.Scan(&item.Id, &item.VideoID, &item.Title,
+		err = rows.Scan(&item.Id, &item.VideoID, &item.Title,
 			&item.PublishedAt)
 		if err != nil {
-			return "", err
+			return
 		}
 
 		ids += item.VideoID + ","
@@ -100,7 +99,7 @@ func (yt *YTStat) GetVideoIds() (string, error) {
 }
 
 // Выбрать видео по дате публикации
-func (yt *YTStat) ReadFromDBVideos(date string) ([]Video, error) {
+func (yt *YTStat) ReadFromDBVideos(date string) (items []Video, err error) {
 	request := "SELECT * FROM videos " +
 		"WHERE date_trunc('day', publishedtime) = to_timestamp($1, $2) " +
 		"ORDER BY id;"
@@ -109,18 +108,17 @@ func (yt *YTStat) ReadFromDBVideos(date string) ([]Video, error) {
 	if err != nil {
 		return nil, err
 	}
-	var items []Video
+
 	for rows.Next() {
 		var item Video
-		err := rows.Scan(&item.Id, &item.VideoID, &item.Title,
+		err = rows.Scan(&item.Id, &item.VideoID, &item.Title,
 			&item.PublishedAt)
 		if err != nil {
-			return nil, err
+			return
 		}
-
 		items = append(items, item)
 	}
-	return items, nil
+	return
 }
 
 func (yt *YTStat) WriteToDBStatistics(resp *Resp) error {
@@ -144,7 +142,7 @@ func (yt *YTStat) WriteToDBStatistics(resp *Resp) error {
 
 func (yt *YTStat) GetVideosForDateFromBD(date string) ([]string, error) {
 	items, err := yt.ReadFromDBVideos(date)
-	if err != nil {
+	if err != nil || len(items) == 0 {
 		return []string{}, err
 	}
 	ids := make([]string, len(items))
